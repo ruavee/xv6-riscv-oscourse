@@ -204,14 +204,16 @@ q_done:
     j    done
 
 bad_fmt:
-    la   a0, fmt_bad
-    call printf
+    li   a0, 2
+    la   a1, fmt_bad
+    call fprintf
     li   a0, 1
     j    done
 
 bad_num:
-    la   a0, fmt_num
-    call printf
+    li   a0, 2
+    la   a1, fmt_num
+    call fprintf
     li   a0, 1
     j    done
 
