@@ -7,6 +7,8 @@
 #include "proc.h"
 #include "vm.h"
 
+int kps_listinfo(uint64, int);
+
 uint64
 sys_exit(void)
 {
@@ -107,3 +109,15 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
+uint64
+sys_ps_listinfo(void)
+{
+  uint64 plist;
+  int lim;
+
+  argaddr(0, &plist);
+  argint(1, &lim);
+  return kps_listinfo(plist, lim);
+}
+
