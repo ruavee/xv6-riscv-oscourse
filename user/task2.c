@@ -9,16 +9,16 @@ die(const char *msg)
   exit(1);
 }
 
-static void
+static int
 write_all(int fd, const char *buf, int n)
 {
   int off = 0;
   while (off < n) {
     int m = write(fd, buf + off, n - off);
-    if(m < 0) die("write failed");
-    if(m == 0) die("write returned 0");
+    if (m <= 0) return -1;
     off += m;
   }
+  return 0;
 }
 
 int
@@ -34,12 +34,14 @@ main(int argc, char *argv[])
     die("fork failed");
 
   if(pid == 0){
-    close(pipefd[1]);
-
-    close(0);
+    if(close(pipefd[1]) < 0)
+      die("close child write end failed");
+    if(close(0) < 0)
+      die("close stdin failed");
     if(dup(pipefd[0]) < 0)
       die("dup failed");
-    close(pipefd[0]);
+    if(close(pipefd[0]) < 0)
+      die("close child read end failed");
 
     char *wcargv[] = {"/wc", 0};
     exec("/wc", wcargv);
@@ -47,13 +49,15 @@ main(int argc, char *argv[])
     die("exec /wc failed");
   }
 
-  close(pipefd[0]);
+  if(close(pipefd[0]) < 0)
+    die("close parent read end failed");
 
   for(int i = 1; i < argc; i++){
     int len = strlen(argv[i]);
-    if(len > 0)
-      write_all(pipefd[1], argv[i], len);
-    write_all(pipefd[1], "\n", 1);
+    if (len > 0 && write_all(pipefd[1], argv[i], len) < 0)
+      die("write failed");
+    if (write_all(pipefd[1], "\n", 1) < 0)
+      die("write failed");
   }
 
   if(close(pipefd[1]) < 0)
