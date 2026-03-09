@@ -618,6 +618,60 @@ setkilled(struct proc *p)
   release(&p->lock);
 }
 
+static void
+fill_procinfo(struct proc *p, struct procinfo *info)
+{
+  info->pid = p->pid;
+  safestrcpy(info->name, p->name, sizeof(info->name));
+  info->state = p->state;
+  if(p->parent)
+    info->ppid = p->parent->pid;
+  else
+    info->ppid = 0;
+}
+
+int
+kps_listinfo(uint64 uaddr, int lim)
+{
+  struct proc *p;
+  struct procinfo info;
+  struct proc *curproc = myproc();
+  int count = 0;
+
+  if(uaddr != 0 && lim < 0)
+    return -1;
+
+  for(p = proc; p < &proc[NPROC]; p++) {
+    int used;
+
+    acquire(&wait_lock);
+    acquire(&p->lock);
+
+    used = p->state != UNUSED;
+    if(used) {
+      fill_procinfo(p, &info);
+      count++;
+    }
+
+    release(&p->lock);
+    release(&wait_lock);
+
+    if(!used || uaddr == 0)
+      continue;
+
+    if(count > lim)
+      return count;
+
+    if(copyout(curproc->pagetable,
+               uaddr + (uint64)(count - 1) * sizeof(info),
+               (char *)&info,
+               sizeof(info)) < 0)
+      return -1;
+  }
+
+  return count;
+}
+
 int
 killed(struct proc *p)
 {
