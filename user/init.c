@@ -11,13 +11,31 @@
 
 char *argv[] = { "sh", 0 };
 
+static void
+ensuredev(char *path, short major, short minor)
+{
+  int fd;
+
+  fd = open(path, O_RDONLY);
+  if(fd >= 0){
+    close(fd);
+    return;
+  }
+  mknod(path, major, minor);
+}
+
 int
 main(void)
 {
   int pid, wpid;
 
+  ensuredev("console", CONSOLE, 0);
+  ensuredev("null", PSEUDO, PSEUDO_NULL);
+  ensuredev("zero", PSEUDO, PSEUDO_ZERO);
+  ensuredev("urandom", PSEUDO, PSEUDO_URANDOM);
+  ensuredev("nullstat", PSEUDO, PSEUDO_NULLSTAT);
+
   if(open("console", O_RDWR) < 0){
-    mknod("console", CONSOLE, 0);
     open("console", O_RDWR);
   }
   dup(0);  // stdout
