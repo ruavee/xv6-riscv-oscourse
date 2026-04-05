@@ -24,6 +24,9 @@ int getpid(void);
 char* sys_sbrk(int,int);
 int pause(int);
 int uptime(void);
+int vmprint(void);
+int vmclearflags(void*, uint64, int);
+int vmcheckflags(void*, uint64, int);
 
 // ulib.c
 int stat(const char*, struct stat*);
