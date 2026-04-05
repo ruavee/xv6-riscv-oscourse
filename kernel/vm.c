@@ -473,6 +473,34 @@ vmfault(pagetable_t pagetable, uint64 va, int read)
 }
 
 int
+vmaccessfault(pagetable_t pagetable, uint64 va, uint64 scause)
+{
+  pte_t *pte;
+  pte_t need = 0;
+
+  if(va >= MAXVA) return 0;
+
+  pte = walk(pagetable, PGROUNDDOWN(va), 0);
+  if(pte == 0) return 0;
+  if((*pte & PTE_V) == 0 || (*pte & (PTE_R | PTE_W | PTE_X)) == 0) return 0;
+
+  if(scause == 12){
+    if((*pte & PTE_X) == 0 || (*pte & PTE_A) != 0) return 0;
+    need = PTE_A;
+  } else if(scause == 13){
+    if((*pte & PTE_R) == 0 || (*pte & PTE_A) != 0) return 0;
+    need = PTE_A;
+  } else if(scause == 15){
+    if((*pte & PTE_W) == 0 || (*pte & (PTE_A | PTE_D)) == (PTE_A | PTE_D)) return 0;
+    need = PTE_A | PTE_D;
+  } else return 0;
+
+  *pte |= need;
+  sfence_vma();
+  return 1;
+}
+
+int
 ismapped(pagetable_t pagetable, uint64 va)
 {
   pte_t *pte = walk(pagetable, va, 0);
@@ -482,5 +510,114 @@ ismapped(pagetable_t pagetable, uint64 va)
   if (*pte & PTE_V){
     return 1;
   }
+  return 0;
+}
+
+static int
+pteisleaf(pte_t pte)
+{
+  return (pte & (PTE_R | PTE_W | PTE_X)) != 0;
+}
+
+static void
+vmprintindent(int depth)
+{
+  for(int i = 0; i < depth; i++) printf("......... ");
+}
+
+static void
+vmprintindex(int idx)
+{
+  static char hex[] = "0123456789ABCDEF";
+  printf("0x%c%c%c", hex[(idx >> 8) & 0xF], hex[(idx >> 4) & 0xF], hex[idx & 0xF]);
+}
+
+static void
+vmprintflags(pte_t pte)
+{
+  printf("%c%c%c%c%c%c%c",
+         (pte & PTE_R) ? 'R' : '_',
+         (pte & PTE_W) ? 'W' : '_',
+         (pte & PTE_X) ? 'X' : '_',
+         (pte & PTE_U) ? 'U' : '_',
+         (pte & PTE_G) ? 'G' : '_',
+         (pte & PTE_A) ? 'A' : '_',
+         (pte & PTE_D) ? 'D' : '_');
+}
+
+static void
+vmprintwalk(pagetable_t pagetable, int depth)
+{
+  for(int i = 0; i < 512; i++){
+    pte_t pte = pagetable[i];
+
+    if((pte & PTE_V) == 0) continue;
+
+    vmprintindent(depth);
+    vmprintindex(i);
+    printf(" -> %p ", (void *)PTE2PA(pte));
+    vmprintflags(pte);
+    printf("\n");
+
+    if(!pteisleaf(pte)) vmprintwalk((pagetable_t)PTE2PA(pte), depth + 1);
+  }
+}
+
+void
+vmprint(pagetable_t pagetable)
+{
+  printf("PAGETABLE %p\n", pagetable);
+  vmprintwalk(pagetable, 0);
+}
+
+static int
+vmwalkrange(uint64 *start, uint64 *last, uint64 va, uint64 len)
+{
+  if(len == 0) return -1;
+
+  *start = PGROUNDDOWN(va);
+  *last = PGROUNDDOWN(va + len - 1);
+  return 0;
+}
+
+int
+vmclearflags(pagetable_t pagetable, uint64 va, uint64 len, int flags)
+{
+  uint64 start, last;
+  int touched = 0;
+
+  if(vmwalkrange(&start, &last, va, len) < 0) return 0;
+
+  for(uint64 a = start; ; a += PGSIZE){
+    pte_t *pte = walk(pagetable, a, 0);
+
+    if(pte != 0 && (*pte & PTE_V) != 0){
+      *pte &= ~flags;
+      touched = 1;
+    }
+
+    if(a == last) break;
+  }
+
+  if(touched) sfence_vma();
+
+  return 0;
+}
+
+int
+vmcheckflags(pagetable_t pagetable, uint64 va, uint64 len, int flags)
+{
+  uint64 start, last;
+
+  if(vmwalkrange(&start, &last, va, len) < 0) return 0;
+
+  for(uint64 a = start; ; a += PGSIZE){
+    pte_t *pte = walk(pagetable, a, 0);
+
+    if(pte != 0 && (*pte & PTE_V) != 0 && (*pte & flags) != 0) return 1;
+
+    if(a == last) break;
+  }
+
   return 0;
 }

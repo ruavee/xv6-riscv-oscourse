@@ -7,6 +7,21 @@
 #include "proc.h"
 #include "vm.h"
 
+static int
+adflags_valid(int flags)
+{
+  return (flags & ~(PTE_A | PTE_D)) == 0;
+}
+
+static int
+range_in_proc(struct proc *p, uint64 addr, uint64 len)
+{
+  if(len == 0) return 1;
+  if(addr >= p->sz) return 0;
+  if(len > p->sz - addr) return 0;
+  return 1;
+}
+
 uint64
 sys_exit(void)
 {
@@ -106,4 +121,45 @@ sys_uptime(void)
   xticks = ticks;
   release(&tickslock);
   return xticks;
+}
+
+uint64
+sys_vmprint(void)
+{
+  vmprint(myproc()->pagetable);
+  return 0;
+}
+
+uint64
+sys_vmclearflags(void)
+{
+  struct proc *p = myproc();
+  uint64 addr, len;
+  int flags;
+
+  argaddr(0, &addr);
+  argaddr(1, &len);
+  argint(2, &flags);
+
+  if(!adflags_valid(flags)) return -1;
+  if(!range_in_proc(p, addr, len)) return -1;
+
+  return vmclearflags(p->pagetable, addr, len, flags);
+}
+
+uint64
+sys_vmcheckflags(void)
+{
+  struct proc *p = myproc();
+  uint64 addr, len;
+  int flags;
+
+  argaddr(0, &addr);
+  argaddr(1, &len);
+  argint(2, &flags);
+
+  if(!adflags_valid(flags)) return -1;
+  if(!range_in_proc(p, addr, len)) return -1;
+
+  return vmcheckflags(p->pagetable, addr, len, flags);
 }
