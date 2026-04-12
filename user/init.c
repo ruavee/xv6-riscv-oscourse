@@ -14,13 +14,9 @@ char *argv[] = { "sh", 0 };
 static void
 ensuredev(char *path, short major, short minor)
 {
-  int fd;
+  struct stat st;
 
-  fd = open(path, O_RDONLY);
-  if(fd >= 0){
-    close(fd);
-    return;
-  }
+  if(stat(path, &st) >= 0) return;
   mknod(path, major, minor);
 }
 
