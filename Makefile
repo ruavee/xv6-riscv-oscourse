@@ -23,6 +23,7 @@ OBJS = \
   $K/log.o \
   $K/sleeplock.o \
   $K/file.o \
+  $K/pseudodev.o \
   $K/pipe.o \
   $K/exec.o \
   $K/sysfile.o \
@@ -140,6 +141,8 @@ UPROGS=\
 	$U/_stressfs\
 	$U/_usertests\
 	$U/_grind\
+	$U/_hexdump\
+	$U/_hexwrite\
 	$U/_wc\
 	$U/_zombie\
 	$U/_logstress\
