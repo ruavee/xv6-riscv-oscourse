@@ -25,6 +25,11 @@
 #define VIRTIO0 0x10001000
 #define VIRTIO0_IRQ 1
 
+// qemu exposes Goldfish RTC registers here in physical memory.
+#define RTC0 0x101000L
+#define RTC0_LOW (RTC0 + 0x0)
+#define RTC0_HIGH (RTC0 + 0x4)
+
 // qemu puts platform-level interrupt controller (PLIC) here.
 #define PLIC 0x0c000000L
 #define PLIC_PRIORITY (PLIC + 0x0)

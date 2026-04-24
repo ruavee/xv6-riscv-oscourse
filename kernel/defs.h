@@ -77,6 +77,10 @@ int             printf(char*, ...) __attribute__ ((format (printf, 1, 2)));
 void            panic(char*) __attribute__((noreturn));
 void            printfinit(void);
 
+// rtc.c
+void            rtcinit(void);
+uint64          rtctime(void);
+
 // proc.c
 int             cpuid(void);
 void            kexit(int);
