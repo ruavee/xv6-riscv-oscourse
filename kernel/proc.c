@@ -5,6 +5,7 @@
 #include "spinlock.h"
 #include "proc.h"
 #include "defs.h"
+#include "diag.h"
 
 struct cpu cpus[NCPU];
 
@@ -302,6 +303,8 @@ kfork(void)
   np->state = RUNNABLE;
   release(&np->lock);
 
+  if(log_enabled(LOG_PROC))
+    pr_msg("fork: parent pid=%d name=%s -> child pid=%d name=%s", p->pid, p->name, pid, np->name);
   return pid;
 }
 
@@ -327,9 +330,22 @@ void
 kexit(int status)
 {
   struct proc *p = myproc();
+  int parent_pid = -1;
+  char parent_name[16];
+  parent_name[0] = 0;
 
   if(p == initproc)
     panic("init exiting");
+
+  acquire(&wait_lock);
+  if(p->parent){
+    parent_pid = p->parent->pid;
+    safestrcpy(parent_name, p->parent->name, sizeof(parent_name));
+  }
+  release(&wait_lock);
+
+  if(log_enabled(LOG_PROC))
+    pr_msg("exit: pid=%d name=%s parent=%d/%s status=%d", p->pid, p->name, parent_pid, parent_name, status);
 
   // Close all open files.
   for(int fd = 0; fd < NOFILE; fd++){

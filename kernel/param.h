@@ -12,4 +12,6 @@
 #define FSSIZE       2000  // size of file system in blocks
 #define MAXPATH      128   // maximum file path name
 #define USERSTACK    1     // user stack pages
+#define DMSG_BUF_PAGES 4     // diagnostic message buffer size, in physical pages
+#define DMSG_BUF_SIZE (DMSG_BUF_PAGES * 4096)
 

@@ -6,6 +6,7 @@
 #include "proc.h"
 #include "defs.h"
 #include "elf.h"
+#include "diag.h"
 
 static int loadseg(pde_t *, uint64, struct inode *, uint, uint);
 
@@ -135,6 +136,7 @@ kexec(char *path, char **argv)
   p->trapframe->sp = sp; // initial stack pointer
   proc_freepagetable(oldpagetable, oldsz);
 
+  if(log_enabled(LOG_EXEC)) pr_msg("exec: pid=%d app=%s", p->pid, path);
   return argc; // this ends up in a0, the first argument to main(argc, argv)
 
  bad:
