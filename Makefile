@@ -6,6 +6,7 @@ OBJS = \
   $K/start.o \
   $K/console.o \
   $K/printf.o \
+  $K/kmsg.o \
   $K/uart.o \
   $K/kalloc.o \
   $K/spinlock.o \
@@ -128,6 +129,9 @@ mkfs/mkfs: mkfs/mkfs.c $K/fs.h $K/param.h
 UPROGS=\
 	$U/_cat\
 	$U/_echo\
+	$U/_dmesg\
+	$U/_logctl\
+	$U/_logdemo\
 	$U/_forktest\
 	$U/_grep\
 	$U/_init\

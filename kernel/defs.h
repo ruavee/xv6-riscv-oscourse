@@ -60,6 +60,13 @@ void*           kalloc(void);
 void            kfree(void *);
 void            kinit(void);
 
+// kmsg.c
+void            kmsginit(void);
+void            pr_msg(const char*, ...) __attribute__ ((format (printf, 1, 2)));
+int             kmsg_read_user(uint64, int);
+int             logctl(int, int, int);
+int             log_enabled(int);
+
 // log.c
 void            initlog(int, struct superblock*);
 void            log_write(struct buf*);
