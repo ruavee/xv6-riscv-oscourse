@@ -195,10 +195,16 @@ devintr()
     int irq = plic_claim();
 
     if(irq == UART0_IRQ){
+      if(log_enabled(LOG_INTR))
+        pr_msg("interrupt: irq=%d device=UART event=external", irq);
       uartintr();
     } else if(irq == VIRTIO0_IRQ){
+      if(log_enabled(LOG_INTR))
+        pr_msg("interrupt: irq=%d device=virtio-disk event=disk-complete", irq);
       virtio_disk_intr();
     } else if(irq){
+      if(log_enabled(LOG_INTR))
+        pr_msg("interrupt: irq=%d device=unknown event=external", irq);
       printf("unexpected interrupt irq=%d\n", irq);
     }
 
